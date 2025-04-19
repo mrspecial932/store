@@ -1,5 +1,14 @@
 "use client";
-//imports------------------------------------------------------------------------
+import { Mail, Lock, AlertCircle } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { FaGoogle } from "react-icons/fa";
+import { motion } from "framer-motion";
+import axios from "axios";
 
 const AnimatedBackground = () => {
   return (
@@ -40,7 +49,58 @@ const AnimatedBackground = () => {
 };
 
 const Login = () => {
-  //login logic------------------------------------------------------
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [user, setUser] = useState({
+    email: "",
+    password: "",
+  });
+
+  //handle the input changes aka when a user is typing something
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setUser((prevInfo) => ({ ...prevInfo, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (!user.email || !user.password) {
+        setError("Please fill in all the fields");
+      }
+      const emailRegex = /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/;
+
+      if (!emailRegex.test(user.email)) {
+        setError("Please provide a email adress!");
+        return;
+      }
+      const res = await signIn("credentials", {
+        email: user.email,
+        password: user.password,
+        redirect: false,
+      });
+
+      if (res?.error) {
+        console.log(res);
+        setError("invalid credentials");
+      } else {
+        setError("");
+        router.push("/dashboard");
+      }
+    } catch (error) {
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      router.push("/");
+    }
+  }, [status, session, router]);
 
   return (
     <div className="flex justify-center items-center min-h-screen overflow-hidden bg-blue-100 relative">

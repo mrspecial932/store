@@ -10,108 +10,124 @@ import toast from "react-hot-toast";
 import { User, Lock, Bell, XCircle } from "lucide-react";
 
 const Settings = () => {
-  const {data : session, update} = useSession();
-  const [personalInfo  , setPersonalInfo] = useState({
-    name : "",
-    email : "",
-    phone :"",
+  const { data: session, update } = useSession();
+  const [personalInfo, setPersonalInfo] = useState({
+    name: "",
+    email: "",
+    phone: "",
+  });
+  const [password, setPassword] = useState({
+    current: "",
+    new: "",
+    confirm: "",
+  });
 
-  })
+  const [communicationPrefs, setCommunicationPrefs] = useState({
+    orderUpdates: false,
+    promotions: false,
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [preferencesChanged, setPreferencesChanged] = useState(false);
 
-  const [password , setPassword] = useState({current : "", new :"" , confirm : "" })
-
-  const [communicationPrefs, setCommunicationPrefs] = useState({orderUpdates: false , promotions : false})
-  const [isLoading , setIsLoading] = useState(false)
-  const [showPasswordForm , setShowPasswordForm] = useState(false)
-  const [preferencesChanged , setpreferencesChanged] = useState(false)
-
-  useEffect(()=>{
-    try{
-      const fetchUserData = async()=> {
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
         const res = await axios.get("/api/user-data");
-        const userData= res.data;
+        const userData = res.data;
         setPersonalInfo({
-          name : userData.name || "",
-          email : userData.email || "",
-          phone : userData.phone || "",
-        })
-      };
-    }catch(error){
-      console.log(error);
-    }
+          name: userData.name || "",
+          email: userData.email || "",
+          phone: userData.phone || "",
+        });
+      } catch (error) {
+        console.log(error);
+      }
+    };
+  
+    fetchUserData();
+  }, []);
+  const handlePasswordChange = (e) => {
+    setPassword({ ...password, [e.target.name]: e.targer.value });
+  };
 
-    fetchUserData(); 
-  }, [])
+  const handleCommunicationPrefsChange = (e) => {
+    setCommunicationPrefs((prev) => {
+      const newPref = { ...prev, [key]: !prev[key] };
+      setPreferencesChanged(true);
+      return newPref;
+    });
+  };
 
-  const handlePasswordChange=(e)=>{
-   setPassword({...password , [e.target.name] : e.target.value })
-  }
-  const handleCommunicationPrefsChange=(e)=>{
-    setCommunicationPrefs((prev)=>{
-      const newPref = {...prev , [key] : !prev[key]};
-      setpreferencesChanged(true);
-      return newPref
-    }) 
-  }
-  const changePassword = async ()=>{
-    if(password.new !==password.confirm){
-      toast.error("enter the same password twice")
+  const changePassword = async () => {
+    if (password.new !== password.confirm) {
+      toast.error("Enter the same password twice");
       return;
-    }setIsLoading(true);
-
-    try{
-      const res = await axios.post("/api/change-password", {currentPAssword : password , newPassword : password.new});
-      toast.success(" password has been changed")
-      setShowPasswordForm(false);
-    }catch (error){
-      console.log(error);
     }
-    finally{
+    setIsLoading(true);
+    try {
+      const res = await axios.post("/api/change-password", {
+        currentPassword: password.current,
+        newPassword: password.new,
+      });
+      toast.success("password has been changed");
+      setShowPasswordForm(false);
+    } catch (error) {
+      console.log(error);
+    } finally {
       setIsLoading(false);
     }
-  }
+  };
 
-  const saveNotificationPreferences= async()=>{
-    setIsLoading(true)
-    try{
-      const res = await axios.post("/api/update-notification-preferences", communicationPrefs);
-
-      if(res.status===200){
-        await update({...session ,
-           user : {
-            ...session?.user , 
-            notificationPreferences : communicationPrefs
-      },
-    });
-    setpreferencesChanged(false)
-    } 
-    else {
-      throw new Error("failed to update preferences");
-    }
-    }catch(error){
-      console.log(error)
-    }finally{
-      setIsLoading(false)
-    }
-  }
-  const deleteAccount = async()=>{
-    if(window.confirm("Are you sure you want to Delete your account. this is not recoverable")){
-      setIsLoading(true)
-    }
-    try{
-      const res = await axios.delete("/api/delete-account");
-      if(res.status === 200){
-        toast.success("Accout deleted")
-        signOut({callbackUrl:"/"});
-      }else{
-        throw new Error("failed to delete account");
+  const saveNotificationPreferences = async () => {
+    setIsLoading(true);
+    try {
+      const res = await axios.post(
+        "/api/update-notification-preferences",
+        communicationPrefs
+      );
+      if (res.status === 200) {
+        await update({
+          ...session,
+          user: {
+            ...session?.user,
+            notificationPreferences: communicationPrefs,
+          },
+        });
+        setPreferencesChanged(false);
+      } else {
+        throw new Error("failed to update preferences");
       }
-    }catch(error){
-      console.log(error)
-    }finally{
-      setIsLoading(false)
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
+
+  const deleteAccount = async () => {
+    if (
+      window.confirm(
+        "Are you sure you want do DELETE your account. This is not Recoverable!"
+      )
+    ) {
+      setIsLoading(true);
+      try {
+        const res = await axios.delete("/api/delete-account");
+        if (res.status === 200) {
+          toast.success("Account deleted");
+          signOut({ callbackUrl: "/" });
+        } else {
+          throw new Error("Failed to delete account");
+        }
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   return (
     <>
       <style jsx>{`

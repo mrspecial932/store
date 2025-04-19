@@ -14,7 +14,49 @@ export default function CategoryPage({ params }) {
   const [wishlist, setWishlist] = useState([]);
   const { data: session } = useSession();
 
-  //logic here
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get(`/api/products/brand/${brand}`);
+        setProducts(res.data);
+      } catch (error) {
+        console.log(error);
+        setError("Error loading products", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [brand]);
+
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (session) {
+        try {
+          const res = await axios.get("/api/wishlist");
+          if (Array.isArray(res.data.items)) {
+            setWishlist(res.data.items.map((item) => item._id));
+          }
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    };
+    fetchWishlist();
+  }, [session]);
+
+  const handleWishlistUpdate = (productId, isAdding) => {
+    if (isAdding) {
+      setWishlist([...wishlist, productId]);
+    } else {
+      setWishlist(wishlist.filter((id) => id !== productId));
+    }
+  };
+
+  if (loading || error) {
+    return <LoadingErrorComponent loading={loading} error={error} />;
+  }
 
   return (
     <div className="flex flex-col min-h-screen">

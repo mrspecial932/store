@@ -1,6 +1,15 @@
 "use client";
-
+import { Mail, Lock, User, AlertCircle, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FaGoogle } from "react-icons/fa";
 import { motion } from "framer-motion";
+import axios from "axios";
+
 const AnimatedBackground = () => {
   return (
     <svg
@@ -14,13 +23,118 @@ const AnimatedBackground = () => {
         </linearGradient>
       </defs>
       <rect width="100%" height="100%" fill="url(#grad1)" />
-      {/* logic here ------------------------------------------------------- */}
+      {[...Array(20)].map((_, i) => {
+        <motion.circle
+          key={i}
+          r={Math.random() * 20 + 10}
+          fill="#fff"
+          initial={{
+            opacity: Math.random() * 0.5 + 0.1,
+            x: Math.random() * 100 + "%",
+            y: Math.random() * 100 + "%",
+          }}
+          animate={{
+            x: Math.random() * 100 + "%",
+            y: Math.random() * 100 + "%",
+          }}
+          transition={{
+            duration: Math.random() * 10 + 20,
+            repeat: Infinity,
+            repeatType: "reverse",
+          }}
+        />;
+      })}
     </svg>
   );
 };
 
 const Signup = () => {
-  // signup logic here ----------------------------------------------------
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [user, setUser] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  //handle the input changes aka when a user is typing something
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setUser((prevInfo) => ({ ...prevInfo, [name]: value }));
+  };
+
+  //handle the submit form
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      if (
+        !user.name ||
+        !user.email ||
+        !user.password ||
+        !user.confirmPassword
+      ) {
+        setError("Please fill in all the fields!");
+        return;
+      }
+
+      const emailRegex = /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/;
+
+      if (!emailRegex.test(user.email)) {
+        setError("Please provide a email adress!");
+        return;
+      }
+
+      if (user.password !== user.confirmPassword) {
+        setError("Please provide matching passwords");
+      }
+
+      //register the user
+
+      const res = await axios.post("/api/register", {
+        name: user.name,
+        email: user.email,
+        password: user.password,
+      });
+
+      if (res.status === 200 || res.status === 201) {
+        console.log("User registered successfully!");
+
+        //sign in the user
+        const signInResult = await signIn("credentials", {
+          email: user.email,
+          password: user.password,
+          redirect: false,
+        });
+
+        if (signInResult.error) {
+          setError("Error signing in");
+        } else {
+          router.push("/dashboard");
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      setError(
+        error.response?.data?.error || "An error occured during registration"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      router.push("/");
+    }
+  }, [status, session, router]);
 
   return (
     <div className="flex justify-center items-center min-h-screen overflow-hidden bg-blue-100 relative">
