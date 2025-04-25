@@ -19,7 +19,7 @@ const Settings = () => {
   const [password, setPassword] = useState({
     current: "",
     new: "",
-    confirm: "",
+    confirm:"",
   });
 
   const [communicationPrefs, setCommunicationPrefs] = useState({
